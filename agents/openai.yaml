@@ -1,0 +1,4 @@
+interface:
+  display_name: "Glasshouse"
+  short_description: "Private coding-agent activity reports"
+  default_prompt: "Create my private Glasshouse report for this month."
