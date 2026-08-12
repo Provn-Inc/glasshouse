@@ -267,8 +267,12 @@ offset rotations, and generated halftone fields in each card header. CSS grid
 reflows from five-wide to one-wide; reduced-motion and print styles remove
 unnecessary transforms. Decorative texture never carries information.
 
-Output path defaults to `./glasshouse-<period>.html`, overridable with
-`--out`.
+All generated artifacts live under `./outputs/`, which Glasshouse creates when
+needed. HTML defaults to `./outputs/glasshouse-<period>.html` and aggregate JSON
+to the matching `.json` path. `--out` and `--json-out` accept filenames or paths
+relative to `./outputs/`; absolute paths and traversal outside the output root
+are rejected. This keeps generated and shareable artifacts out of the project
+root and gives report discovery one predictable boundary.
 
 `render.py` owns templating. Claude contributes only the card *content* for the
 four judgment cards, handed back as JSON; it never writes HTML directly. This
@@ -322,9 +326,10 @@ three. `--dry-run` prints the stat block and exits without writing JSON or HTML.
 ### Local report server
 
 `glasshouse serve` previews an already generated report through a local HTTP
-server. An explicit `REPORT.html` is resolved and validated before the server
-starts. When omitted, Glasshouse selects the most recently modified
-`glasshouse-*.html` file in the current directory.
+server. The command creates `./outputs/` if it does not exist. An explicit
+`REPORT.html` is resolved relative to that directory and validated before the
+server starts. When omitted, Glasshouse selects the most recently modified
+`glasshouse-*.html` file in `./outputs/`.
 
 The server binds to `127.0.0.1` only. Port `0` is the default, allowing the
 operating system to select an available port; `--port` accepts an explicit port
@@ -333,10 +338,10 @@ browser unless `--no-open` is supplied, prints the URL, and runs until Ctrl-C.
 Shutdown is clean and does not print a traceback.
 
 Only the selected report is exposed. Requests for other paths return 404, and
-path traversal cannot escape to adjacent files. Serving never scans transcripts,
-computes metrics, or rewrites the report. Missing files, non-HTML inputs, an
-empty discovery result, and unavailable explicit ports produce concise errors
-and non-zero exit codes.
+path traversal cannot escape to adjacent files. Explicit report paths outside
+`./outputs/` are rejected. Serving never scans transcripts, computes metrics, or
+rewrites the report. Missing files, non-HTML inputs, an empty discovery result,
+and unavailable explicit ports produce concise errors and non-zero exit codes.
 
 ## Implementation sequencing
 
