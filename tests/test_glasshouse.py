@@ -1,9 +1,10 @@
 import json
-import sqlite3
 import tempfile
 import unittest
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 from glasshouse.model import Period, Prompt, Session
 from glasshouse.adapters.claude_code import collect as collect_claude
@@ -16,6 +17,17 @@ from glasshouse.cli import main
 
 
 UTC = timezone.utc
+
+
+@contextmanager
+def working_directory(path):
+    import os
+    previous = Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(previous)
 
 
 class PeriodTests(unittest.TestCase):
@@ -130,11 +142,36 @@ class RenderAndCliTests(unittest.TestCase):
             for i in range(10):
                 rows.append({"type":"user","timestamp":f"2026-08-02T10:{i:02d}:00Z","sessionId":"s1","cwd":str(base),"promptSource":"typed","message":{"content":"please build glasshouse"}})
             source.write_text("\n".join(json.dumps(r) for r in rows))
-            out = base / "report.html"; data = base / "report.json"
-            code = main(["--period","2026-08","--sources","claude_code","--claude-root",str(base / "claude"),"--no-git","--out",str(out),"--json-out",str(data)])
+            with working_directory(base):
+                code = main(["--period","2026-08","--sources","claude_code","--claude-root",str(base / "claude"),"--no-git"])
+            out = base / "outputs" / "glasshouse-2026-08.html"
+            data = base / "outputs" / "glasshouse-2026-08.json"
             self.assertEqual(code, 0)
             self.assertTrue(out.exists())
             self.assertEqual(json.loads(data.read_text())["summary"]["sessions_by_source"]["claude_code"], 1)
+
+    def test_serve_dispatches_newest_report_without_collecting(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            output = base / "outputs"; output.mkdir()
+            report = output / "glasshouse-2026-08.html"; report.write_text("report")
+            with working_directory(base), patch("glasshouse.cli.serve_report", return_value=0) as serve, patch("glasshouse.cli.collect_sources") as collect:
+                code = main(["serve", "--no-open"])
+            self.assertEqual(code, 0)
+            serve.assert_called_once_with(report.resolve(), port=0, open_browser=False)
+            collect.assert_not_called()
+
+    def test_generation_rejects_output_path_escape(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "claude" / "session.jsonl"; source.parent.mkdir()
+            rows = [{"type":"user","timestamp":f"2026-08-02T10:{i:02d}:00Z","sessionId":"s","promptSource":"typed","message":{"content":"build it now"}} for i in range(10)]
+            source.write_text("\n".join(json.dumps(row) for row in rows))
+            escaped_name = f"escape-{base.name}.html"
+            with working_directory(base):
+                code = main(["--period","2026-08","--sources","claude_code","--claude-root",str(base / "claude"),"--no-git","--out",f"../{escaped_name}"])
+            self.assertEqual(code, 2)
+            self.assertFalse((base.parent / escaped_name).exists())
 
 
 if __name__ == "__main__":

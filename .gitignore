@@ -4,6 +4,4 @@ __pycache__/
 .venv/
 build/
 dist/
-glasshouse-*.html
-glasshouse-*.json
-
+outputs/

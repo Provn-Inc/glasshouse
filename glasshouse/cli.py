@@ -6,12 +6,18 @@ from .adapters import ADAPTERS, collect_sources
 from .gitstats import collect_git_stats
 from .metrics import compute_metrics
 from .model import Period
+from .outputs import OutputPaths
 from .render import render_report
 from .scrub import scrub
+from .server import serve_report
 
 
 def parser():
-    p = argparse.ArgumentParser(prog="glasshouse", description="Your coding-agent work, reflected back. Private and local.")
+    p = argparse.ArgumentParser(
+        prog="glasshouse",
+        description="Your coding-agent work, reflected back. Private and local.",
+        epilog="Preview a generated report with: glasshouse serve [REPORT.html]",
+    )
     p.add_argument("--period", help="Calendar month (YYYY-MM) or year (YYYY); defaults to current month")
     p.add_argument("--out", type=Path, help="HTML output path")
     p.add_argument("--json-out", type=Path, help="Aggregate JSON output path")
@@ -25,7 +31,32 @@ def parser():
     return p
 
 
+def serve_parser():
+    p = argparse.ArgumentParser(prog="glasshouse serve", description="Open a generated Glasshouse report in your browser.")
+    p.add_argument("report", nargs="?", type=Path, help="Report beneath ./outputs; defaults to the newest report")
+    p.add_argument("--port", type=int, default=0, help="Local port; defaults to an available port")
+    p.add_argument("--no-open", action="store_true", help="Serve without opening the browser")
+    return p
+
+
+def _serve(argv):
+    args = serve_parser().parse_args(argv)
+    if not 0 <= args.port <= 65535:
+        print("glasshouse serve: port must be between 0 and 65535", file=sys.stderr)
+        return 2
+    paths = OutputPaths()
+    try:
+        report = paths.report(args.report) if args.report else paths.latest_report()
+        return serve_report(report, port=args.port, open_browser=not args.no_open)
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        print(f"glasshouse serve: {exc}", file=sys.stderr)
+        return 2
+
+
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "serve":
+        return _serve(argv[1:])
     args = parser().parse_args(argv)
     try: period = Period.parse(args.period)
     except ValueError as exc:
@@ -52,11 +83,15 @@ def main(argv=None):
     payload = json.dumps(report, indent=2, sort_keys=True, default=str)
     if args.dry_run:
         print(payload); return 0
-    html_out = args.out or Path(f"glasshouse-{period.label}.html")
-    json_out = args.json_out or html_out.with_suffix(".json")
-    json_out.parent.mkdir(parents=True, exist_ok=True); json_out.write_text(payload + "\n", encoding="utf-8")
+    paths = OutputPaths()
+    try:
+        html_out = paths.resolve(args.out, f"glasshouse-{period.label}.html")
+        json_out = paths.resolve(args.json_out, f"glasshouse-{period.label}.json") if args.json_out else html_out.with_suffix(".json")
+    except ValueError as exc:
+        print(f"glasshouse: {exc}", file=sys.stderr)
+        return 2
+    json_out.write_text(payload + "\n", encoding="utf-8")
     render_report(report, html_out)
     print(f"Glasshouse wrote {html_out} and {json_out}")
     print(f"Parsed {len(sessions)} sessions; scrubbed {cleaned.count} sensitive value(s).")
     return 0
-
