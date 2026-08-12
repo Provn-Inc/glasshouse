@@ -99,6 +99,7 @@ class MetricAndPrivacyTests(unittest.TestCase):
         self.assertIn("prompt_length", ids)
         self.assertNotIn("parallel_agents", ids)
         self.assertEqual(next(c for c in result.cards if c["id"] == "plan_mode")["headline"], "50% in plan mode")
+        self.assertTrue(all(len(card["detail"]) > len(card["body"]) for card in result.cards))
 
     def test_longest_run_splits_after_fifteen_minute_prompt_gap(self):
         prompts = [Prompt("work on it", datetime(2026,8,1,10,minute,tzinfo=UTC), 3) for minute in (0, 10, 20)]
@@ -120,7 +121,7 @@ class MetricAndPrivacyTests(unittest.TestCase):
 
 class RenderAndCliTests(unittest.TestCase):
     def test_renderer_is_self_contained_deterministic_and_escaped(self):
-        report = {"period":"2026-08","cards":[{"id":"archetype","question":"Which?","headline":"<Architect>","body":"Build & ship"}],"summary":{}}
+        report = {"period":"2026-08","cards":[{"id":"archetype","question":"Which?","headline":"<Architect>","body":"Build & ship","detail":"Longer <private> reading & context."}],"summary":{}}
         with tempfile.TemporaryDirectory() as tmp:
             a = Path(tmp) / "a.html"
             b = Path(tmp) / "b.html"
@@ -128,10 +129,25 @@ class RenderAndCliTests(unittest.TestCase):
             html = a.read_text()
             self.assertEqual(html, b.read_text())
             self.assertIn("&lt;Architect&gt;", html)
-            self.assertNotIn("<script", html.lower())
+            self.assertEqual(html.lower().count("<script>"), 1)
             self.assertNotIn("http://", html)
             self.assertNotIn("https://", html)
             self.assertIn("@media (max-width: 700px)", html)
+            self.assertIn("role=\"button\"", html)
+            self.assertIn("tabindex=\"0\"", html)
+            self.assertIn("<dialog", html)
+            self.assertIn("aria-modal=\"true\"", html)
+            self.assertIn("aria-controls=\"card-dialog\"", html)
+            self.assertIn("aria-expanded=\"false\"", html)
+            self.assertIn("setAttribute('aria-expanded', 'true')", html)
+            self.assertIn("Longer &lt;private&gt; reading &amp; context.", html)
+            self.assertIn("@keyframes card-wiggle", html)
+            self.assertIn("(hover:hover) and (pointer:fine)", html)
+            self.assertIn("prefers-reduced-motion:reduce", html)
+            self.assertIn("data-action=\"previous\"", html)
+            self.assertIn("data-action=\"next\"", html)
+            self.assertIn("history.replaceState", html)
+            self.assertIn("lastTrigger.focus()", html)
 
     def test_cli_end_to_end_with_isolated_claude_home(self):
         with tempfile.TemporaryDirectory() as tmp:

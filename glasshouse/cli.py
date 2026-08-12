@@ -74,9 +74,11 @@ def main(argv=None):
     if not args.no_git:
         git = collect_git_stats([s.cwd for s in sessions], period, not args.no_gh)
         if git.commits:
-            metrics.cards.append({"id":"shipped","question":"How much did you ship?","headline":f"{git.insertions:,} lines added","body":f"Across {git.commits:,} commits; {git.deletions:,} lines removed."})
+            body = f"Across {git.commits:,} commits; {git.deletions:,} lines removed."
+            metrics.cards.append({"id":"shipped","question":"How much did you ship?","headline":f"{git.insertions:,} lines added","body":body,"detail":"These totals come from local Git numstat data within the selected calendar period. Binary changes are excluded from line totals."})
         if git.commits >= 5 and git.ship_day:
-            metrics.cards.append({"id":"ship_day","question":"When do you ship most?","headline":git.ship_day,"body":"Your most common commit day in this period."})
+            body = "Your most common commit day in this period."
+            metrics.cards.append({"id":"ship_day","question":"When do you ship most?","headline":git.ship_day,"body":body,"detail":"Glasshouse groups locally attributed commits by weekday and selects the most frequent day once at least five commits are available."})
     summary = {"sessions_by_source": {r.source: len(r.sessions) for r in results}, "malformed_lines": sum(r.malformed_lines for r in results), "skipped_sources": {r.source:r.skipped for r in results if r.skipped}, "dropped_cards": metrics.dropped}
     report = {"tool":"glasshouse", "period":period.label, "cards":metrics.cards, "stats":metrics.stats, "summary":summary}
     cleaned = scrub(report); report = cleaned.value; report["summary"]["secrets_scrubbed"] = cleaned.count
