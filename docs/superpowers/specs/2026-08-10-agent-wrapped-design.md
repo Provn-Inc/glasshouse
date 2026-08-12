@@ -259,13 +259,36 @@ match with a typed placeholder such as `[api-key]`, preserving readability.
 
 ## Rendering
 
-Self-contained HTML: inline CSS and SVG, no external assets, no CDN references,
-and no JavaScript. A system font stack and high-contrast typography keep it
-portable. The visual direction is an editorial orange-and-paper poster: a loose
+Self-contained HTML: inline CSS, SVG, and a small progressive-enhancement
+script; no external assets or CDN references. A system font stack and
+high-contrast typography keep it portable. The visual direction is an editorial orange-and-paper poster: a loose
 five-column stack of thin outlined cards, alternating warm orange tones, subtle
 offset rotations, and generated halftone fields in each card header. CSS grid
 reflows from five-wide to one-wide; reduced-motion and print styles remove
 unnecessary transforms. Decorative texture never carries information.
+
+### Card interaction and expanded reading view
+
+Cards are semantic buttons within their existing poster layout. On devices that
+support hover and fine pointers, a card lifts slightly and performs one brief,
+low-amplitude irregular wiggle. It does not loop. Touch devices retain a simple
+pressed state, and `prefers-reduced-motion` disables all transforms and animated
+transitions.
+
+Activating a card opens a full-viewport reading overlay styled as an enlarged
+Glasshouse index card rather than a generic dialog. It presents the question,
+headline, short interpretation, and a longer deterministic detail assembled
+from the same locally computed aggregate metrics. No additional model or network
+call is introduced. Previous and next controls make the report readable as a
+sequence.
+
+The overlay uses native dialog semantics where available, moves focus to its
+close button, restores focus to the invoking card, prevents background
+scrolling, and closes through Escape, its close button, or a click on the
+backdrop. Cards support click plus Enter and Space. Opening a card writes
+`#card-<id>` to the URL; loading or navigating to that hash opens the matching
+card, and closing clears it. The non-scripted report remains fully readable as
+the original grid. Modal controls and scripts are omitted from print output.
 
 All generated artifacts live under `./outputs/`, which Glasshouse creates when
 needed. HTML defaults to `./outputs/glasshouse-<period>.html` and aggregate JSON
