@@ -131,7 +131,7 @@ class RenderAndCliTests(unittest.TestCase):
             self.assertIn("&lt;Architect&gt;", html)
             self.assertEqual(html.lower().count("<script>"), 1)
             self.assertNotIn("http://", html)
-            self.assertNotIn("https://", html)
+            self.assertEqual(html.count("https://"), 1)
             self.assertIn("@media (max-width: 700px)", html)
             self.assertIn("role=\"button\"", html)
             self.assertIn("tabindex=\"0\"", html)
@@ -151,6 +151,11 @@ class RenderAndCliTests(unittest.TestCase):
             self.assertIn("data-action=\"next\"", html)
             self.assertIn("history.replaceState", html)
             self.assertIn("lastTrigger.focus()", html)
+            self.assertIn('class="provn-watermark"', html)
+            self.assertIn('href="https://provn.co"', html)
+            self.assertIn('data:image/png;base64,', html)
+            self.assertIn('Powered by', html)
+            self.assertNotIn('https://provn.co/logo.png', html)
 
     def test_cli_end_to_end_with_isolated_claude_home(self):
         with tempfile.TemporaryDirectory() as tmp:

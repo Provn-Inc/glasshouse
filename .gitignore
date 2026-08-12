@@ -7,4 +7,5 @@ htmlcov/
 .venv/
 build/
 dist/
+docs/
 outputs/

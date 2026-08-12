@@ -15,7 +15,7 @@ authors = [{name = "Glasshouse contributors"}]
 glasshouse = "glasshouse.cli:main"
 
 [tool.setuptools.package-data]
-glasshouse = ["templates/*.html"]
+glasshouse = ["assets/*.png", "templates/*.html"]
 
 [tool.setuptools.packages.find]
 include = ["glasshouse*"]

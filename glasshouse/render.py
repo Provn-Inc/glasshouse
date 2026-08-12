@@ -1,7 +1,13 @@
 from __future__ import annotations
 from html import escape
 from pathlib import Path
-import hashlib, json, os, tempfile
+import base64, hashlib, json, os, tempfile
+
+
+def _provn_logo_data_uri() -> str:
+    logo = Path(__file__).with_name("assets") / "provn-logo.png"
+    encoded = base64.b64encode(logo.read_bytes()).decode("ascii")
+    return f"data:image/png;base64,{encoded}"
 
 
 def _halftone(card_id: str) -> str:
@@ -24,6 +30,7 @@ def _halftone(card_id: str) -> str:
 
 def render_report(report: dict, output_path: Path | str) -> Path:
     output = Path(output_path)
+    provn_logo = _provn_logo_data_uri()
     cards = []
     for index, card in enumerate(report.get("cards", [])):
         card_id = escape(str(card.get("id", index)), quote=True)
@@ -55,14 +62,16 @@ dialog{{width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;paddin
 .modal-card{{width:min(1040px,100%);min-height:min(720px,calc(100dvh - 4rem));display:grid;grid-template-columns:minmax(260px,38%) 1fr;background:#fff;border:2px solid var(--orange);box-shadow:18px 22px 0 rgba(0,0,0,.24);position:relative;overflow:hidden}}
 .modal-art{{background:var(--orange);min-height:280px;display:grid;place-items:center;overflow:hidden}} .modal-art .texture{{height:100%;width:100%}} .modal-copy{{padding:clamp(2rem,6vw,5rem);display:flex;flex-direction:column;justify-content:center}} .modal-question{{color:var(--orange);font:700 .78rem/1.2 monospace;text-transform:uppercase;letter-spacing:.05em}} .modal-headline{{font-size:clamp(2.5rem,6vw,5.8rem);line-height:.88;letter-spacing:-.06em;margin:.4em 0 .32em}} .modal-summary{{font-size:1.05rem;font-weight:700;line-height:1.45;margin:0 0 1.4rem}} .modal-detail{{font-size:clamp(1rem,1.6vw,1.25rem);line-height:1.65;max-width:58ch;margin:0}}
 .modal-close{{position:absolute;right:1rem;top:1rem;width:48px;height:48px;border:1.5px solid var(--ink);background:#fff;font-size:1.7rem;cursor:pointer;z-index:2}} .modal-close:focus-visible,.modal-nav button:focus-visible{{outline:3px solid var(--orange);outline-offset:3px}} .modal-nav{{display:flex;gap:.5rem;margin-top:2.5rem}} .modal-nav button{{border:1.5px solid var(--ink);background:#fff;padding:.8rem 1rem;font-weight:700;cursor:pointer}} body.modal-open{{overflow:hidden}}
+.provn-watermark{{position:fixed;left:14px;bottom:14px;z-index:20;display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(247,244,238,.92);border:1px solid rgba(40,35,31,.18);color:var(--ink);text-decoration:none;box-shadow:3px 4px 0 rgba(40,35,31,.09);backdrop-filter:blur(6px)}} .provn-watermark span{{font:600 9px/1 monospace;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}} .provn-watermark img{{display:block;width:92px;height:auto}} .provn-watermark:hover{{border-color:var(--orange)}} .provn-watermark:focus-visible{{outline:3px solid var(--orange);outline-offset:3px}}
 footer{{margin-top:3rem;font:11px/1.5 monospace;border-top:1px solid;padding-top:1rem;word-break:break-word}}
 @media (max-width: 1050px){{.grid{{grid-template-columns:repeat(3,1fr)}}}}
 @media (max-width: 700px){{main{{padding:3rem 1rem}} header{{display:block}} .grid{{grid-template-columns:1fr}} .card{{min-height:330px;transform:none!important;margin:-1px 0 0!important}} .modal-shell{{padding:0}} .modal-card{{min-height:100dvh;grid-template-columns:1fr;grid-template-rows:28vh 1fr;box-shadow:none;border-width:0}} .modal-copy{{padding:2rem 1.4rem 3rem;justify-content:start}} .modal-headline{{font-size:clamp(2.5rem,13vw,4.5rem)}}}}
 @media (prefers-reduced-motion:reduce){{*{{scroll-behavior:auto!important}}.card{{transform:none!important;transition:none!important;animation:none!important}}}}
-@media print{{main{{padding:.2in}} .card{{transform:none!important;break-inside:avoid}} footer,.read-more,dialog,script{{display:none!important}}}}
+@media print{{main{{padding:.2in}} .card{{transform:none!important;break-inside:avoid}} footer,.read-more,dialog,script,.provn-watermark{{display:none!important}}}}
 </style></head><body><main><header><h1>glasshouse</h1><p class="period">{escape(str(report.get('period','')))}</p></header>
 <section class="grid" aria-label="Your coding-agent activity cards">{"".join(cards)}</section>
 <footer aria-label="Collection summary">LOCAL ONLY · {summary}</footer></main>
+<a class="provn-watermark" href="https://provn.co" target="_blank" rel="noopener noreferrer" aria-label="Powered by Provn"><span>Powered by</span><img src="{provn_logo}" alt="Provn"></a>
 <dialog id="card-dialog" aria-modal="true" aria-labelledby="modal-headline"><div class="modal-shell">
 <article class="modal-card"><button class="modal-close" data-action="close" aria-label="Close expanded card">×</button>
 <div class="modal-art" aria-hidden="true"></div><div class="modal-copy"><p class="modal-question"></p><h2 class="modal-headline" id="modal-headline"></h2><p class="modal-summary"></p><p class="modal-detail"></p>
