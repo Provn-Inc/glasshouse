@@ -12,20 +12,8 @@ def _provn_logo_data_uri() -> str:
 
 def _halftone(card_id: str) -> str:
     digest = hashlib.sha256(card_id.encode()).digest()
-    pattern_id = f"dots-{digest.hex()[:10]}"
-    dots = []
-    for y in range(8, 104, 8):
-        for x in range(7, 273, 8):
-            wave = digest[(x // 8 + y // 8) % len(digest)] / 255
-            radius = .7 + 2.2 * max(0, wave - y / 145)
-            if radius > .8:
-                dots.append(f'<circle cx="{x}" cy="{y}" r="{radius:.1f}"/>')
-    return (
-        '<svg class="texture" width="100%" height="100%" aria-hidden="true">'
-        f'<defs><pattern id="{pattern_id}" patternUnits="userSpaceOnUse" width="280" height="112">'
-        + "".join(dots)
-        + f'</pattern></defs><rect width="100%" height="100%" fill="url(#{pattern_id})"/></svg>'
-    )
+    seed = int.from_bytes(digest[:4], "big")
+    return f'<svg class="texture" width="100%" height="100%" data-texture-seed="{seed}" aria-hidden="true"></svg>'
 
 
 def render_report(report: dict, output_path: Path | str) -> Path:
@@ -60,7 +48,7 @@ h1{{font-size:clamp(3rem,8vw,8rem);letter-spacing:-.07em;line-height:.76;margin:
 @media (hover:hover) and (pointer:fine){{.card:hover{{animation:card-wiggle .36s cubic-bezier(.2,.8,.3,1) both;box-shadow:8px 10px 0 rgba(40,35,31,.12);z-index:3}}}}
 dialog{{width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;background:rgba(40,35,31,.72);color:var(--ink)}} dialog::backdrop{{background:rgba(40,35,31,.72)}} .modal-shell{{min-height:100%;display:grid;place-items:center;padding:clamp(1rem,4vw,4rem)}}
 .modal-card{{width:min(1040px,100%);min-height:min(720px,calc(100dvh - 4rem));display:grid;grid-template-columns:minmax(260px,38%) 1fr;background:#fff;border:2px solid var(--orange);box-shadow:18px 22px 0 rgba(0,0,0,.24);position:relative;overflow:hidden}}
-.modal-art{{background:var(--orange);min-height:280px;display:grid;place-items:center;overflow:hidden}} .modal-art .texture{{height:100%;width:100%}} .modal-copy{{padding:clamp(2rem,6vw,5rem);display:flex;flex-direction:column;justify-content:center}} .modal-question{{color:var(--orange);font:700 .78rem/1.2 monospace;text-transform:uppercase;letter-spacing:.05em}} .modal-headline{{font-size:clamp(2.5rem,6vw,5.8rem);line-height:.88;letter-spacing:-.06em;margin:.4em 0 .32em}} .modal-summary{{font-size:1.05rem;font-weight:700;line-height:1.45;margin:0 0 1.4rem}} .modal-detail{{font-size:clamp(1rem,1.6vw,1.25rem);line-height:1.65;max-width:58ch;margin:0}}
+.modal-art{{background:var(--orange);min-height:280px;display:grid;place-items:center;overflow:hidden;position:relative}} .modal-art .texture{{position:absolute;inset:0;height:100%;width:100%}} .modal-copy{{padding:clamp(2rem,6vw,5rem);display:flex;flex-direction:column;justify-content:center}} .modal-question{{color:var(--orange);font:700 .78rem/1.2 monospace;text-transform:uppercase;letter-spacing:.05em}} .modal-headline{{font-size:clamp(2.5rem,6vw,5.8rem);line-height:.88;letter-spacing:-.06em;margin:.4em 0 .32em}} .modal-summary{{font-size:1.05rem;font-weight:700;line-height:1.45;margin:0 0 1.4rem}} .modal-detail{{font-size:clamp(1rem,1.6vw,1.25rem);line-height:1.65;max-width:58ch;margin:0}}
 .modal-close{{position:absolute;right:1rem;top:1rem;width:48px;height:48px;border:1.5px solid var(--ink);background:#fff;font-size:1.7rem;cursor:pointer;z-index:2}} .modal-close:focus-visible,.modal-nav button:focus-visible{{outline:3px solid var(--orange);outline-offset:3px}} .modal-nav{{display:flex;gap:.5rem;margin-top:2.5rem}} .modal-nav button{{border:1.5px solid var(--ink);background:#fff;padding:.8rem 1rem;font-weight:700;cursor:pointer}} body.modal-open{{overflow:hidden}}
 .provn-watermark{{position:fixed;left:14px;bottom:14px;z-index:20;display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(247,244,238,.92);border:1px solid rgba(40,35,31,.18);color:var(--ink);text-decoration:none;box-shadow:3px 4px 0 rgba(40,35,31,.09);backdrop-filter:blur(6px)}} .provn-watermark span{{font:600 9px/1 monospace;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}} .provn-watermark img{{display:block;width:92px;height:auto}} .provn-watermark:hover{{border-color:var(--orange)}} .provn-watermark:focus-visible{{outline:3px solid var(--orange);outline-offset:3px}}
 footer{{margin-top:3rem;font:11px/1.5 monospace;border-top:1px solid;padding-top:1rem;word-break:break-word}}
@@ -84,6 +72,49 @@ footer{{margin-top:3rem;font:11px/1.5 monospace;border-top:1px solid;padding-top
   let currentIndex = -1;
   let lastTrigger = null;
 
+  function randomField(seed) {{
+    let state = seed >>> 0;
+    return () => {{
+      state += 0x6d2b79f5;
+      let value = state;
+      value = Math.imul(value ^ value >>> 15, value | 1);
+      value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+      return ((value ^ value >>> 14) >>> 0) / 4294967296;
+    }};
+  }}
+
+  function renderTexture(texture) {{
+    const width = Math.max(1, Math.round(texture.clientWidth));
+    const height = Math.max(1, Math.round(texture.clientHeight));
+    if (texture.dataset.renderSize === `${{width}}x${{height}}`) return;
+    texture.dataset.renderSize = `${{width}}x${{height}}`;
+    texture.setAttribute('viewBox', `0 0 ${{width}} ${{height}}`);
+    texture.replaceChildren();
+    const random = randomField(Number(texture.dataset.textureSeed) ^ width ^ (height << 16));
+    const dots = document.createDocumentFragment();
+    for (let y = 6; y < height; y += 8) {{
+      for (let x = 6; x < width; x += 8) {{
+        const drift = Math.sin((x + y * .37) * .021 + random() * 2.8);
+        const density = .46 + .28 * drift + .18 * random();
+        if (random() > density) continue;
+        const circle = document.createElementNS(texture.namespaceURI, 'circle');
+        circle.setAttribute('cx', (x + (random() - .5) * 3).toFixed(1));
+        circle.setAttribute('cy', (y + (random() - .5) * 3).toFixed(1));
+        circle.setAttribute('r', (.8 + random() * 2.1).toFixed(1));
+        dots.append(circle);
+      }}
+    }}
+    texture.append(dots);
+  }}
+
+  const textureObserver = new ResizeObserver(entries => {{
+    entries.forEach(entry => renderTexture(entry.target));
+  }});
+  document.querySelectorAll('.texture').forEach(texture => {{
+    textureObserver.observe(texture);
+    renderTexture(texture);
+  }});
+
   function fill(index, updateHash = true) {{
     const card = cards[index];
     if (!card) return;
@@ -92,7 +123,9 @@ footer{{margin-top:3rem;font:11px/1.5 monospace;border-top:1px solid;padding-top
     dialog.querySelector('.modal-headline').textContent = card.querySelector('h2').textContent;
     dialog.querySelector('.modal-summary').textContent = card.querySelector('.summary').textContent;
     dialog.querySelector('.modal-detail').textContent = card.querySelector('.detail').textContent;
-    dialog.querySelector('.modal-art').replaceChildren(card.querySelector('.texture').cloneNode(true));
+    const texture = card.querySelector('.texture').cloneNode(false);
+    dialog.querySelector('.modal-art').replaceChildren(texture);
+    textureObserver.observe(texture);
     if (updateHash) history.replaceState(null, '', '#card-' + card.dataset.cardId);
   }}
 
@@ -102,6 +135,7 @@ footer{{margin-top:3rem;font:11px/1.5 monospace;border-top:1px solid;padding-top
     cards.forEach(card => card.setAttribute('aria-expanded', 'false'));
     cards[index].setAttribute('aria-expanded', 'true');
     if (!dialog.open) dialog.showModal();
+    requestAnimationFrame(() => renderTexture(dialog.querySelector('.texture')));
     document.body.classList.add('modal-open');
     closeButton.focus();
   }}
