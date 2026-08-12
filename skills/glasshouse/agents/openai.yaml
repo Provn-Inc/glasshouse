@@ -1,0 +1,4 @@
+interface:
+  display_name: "Glasshouse"
+  short_description: "Discover what kind of builder you are"
+  default_prompt: "Use $glasshouse to create my private builder report for this month."

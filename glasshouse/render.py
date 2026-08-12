@@ -59,7 +59,7 @@ footer{{margin-top:3rem;font:11px/1.5 monospace;border-top:1px solid;padding-top
 </style></head><body><main><header><h1>glasshouse</h1><p class="period">{escape(str(report.get('period','')))}</p></header>
 <section class="grid" aria-label="Your coding-agent activity cards">{"".join(cards)}</section>
 <footer aria-label="Collection summary">LOCAL ONLY · {summary}</footer></main>
-<a class="provn-watermark" href="https://provn.co" target="_blank" rel="noopener noreferrer" aria-label="Powered by Provn"><span>Powered by</span><img src="{provn_logo}" alt="Provn"></a>
+<a class="provn-watermark" href="https://provn.co/?utm_source=glasshouse&amp;utm_medium=referral&amp;utm_campaign=free_tool&amp;utm_content=report_watermark" target="_blank" rel="noopener noreferrer" aria-label="Powered by Provn"><span>Powered by</span><img src="{provn_logo}" alt="Provn"></a>
 <dialog id="card-dialog" aria-modal="true" aria-labelledby="modal-headline"><div class="modal-shell">
 <article class="modal-card"><button class="modal-close" data-action="close" aria-label="Close expanded card">×</button>
 <div class="modal-art" aria-hidden="true"></div><div class="modal-copy"><p class="modal-question"></p><h2 class="modal-headline" id="modal-headline"></h2><p class="modal-summary"></p><p class="modal-detail"></p>

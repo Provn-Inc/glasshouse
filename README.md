@@ -1,10 +1,18 @@
 # Glasshouse
 
-![Five orange Glasshouse report cards showing a builder archetype, model preference, productive hours, planning frequency, and parallel agent usage](assets/glasshouse-report.png)
+![Glasshouse report grid showing a builder archetype, model preference, productive hours, planning habits, agent usage, and prompt style](assets/glasshouse-report.png)
 
 **See what kind of builder you are.**
 
 Glasshouse turns your local Claude Code, Codex, and Cursor history into an interactive, Wrapped-style report about how you build: your archetype, habits, prompts, productive hours, agent usage, and shipped work.
+
+Install it as an agent skill with [skills.sh](https://skills.sh):
+
+```bash
+npx skills add Provn-Inc/glasshouse -g
+```
+
+Then ask your agent: `Use $glasshouse to create my builder report for this month.`
 
 ## Quick start
 

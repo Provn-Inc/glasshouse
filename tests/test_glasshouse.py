@@ -155,7 +155,7 @@ class RenderAndCliTests(unittest.TestCase):
             self.assertIn("history.replaceState", html)
             self.assertIn("lastTrigger.focus()", html)
             self.assertIn('class="provn-watermark"', html)
-            self.assertIn('href="https://provn.co"', html)
+            self.assertIn('href="https://provn.co/?utm_source=glasshouse&amp;utm_medium=referral&amp;utm_campaign=free_tool&amp;utm_content=report_watermark"', html)
             self.assertIn('data:image/png;base64,', html)
             self.assertIn('Powered by', html)
             self.assertNotIn('https://provn.co/logo.png', html)
