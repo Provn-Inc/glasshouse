@@ -263,7 +263,9 @@ Self-contained HTML: inline CSS, SVG, and a small progressive-enhancement
 script; no external assets or CDN references. A system font stack and
 high-contrast typography keep it portable. The visual direction is an editorial orange-and-paper poster: a loose
 five-column stack of thin outlined cards, alternating warm orange tones, subtle
-offset rotations, and generated halftone fields in each card header. CSS grid
+offset rotations, and generated halftone fields in each card header. Halftones
+use a fixed-size repeating SVG tile: larger containers reveal more dots without
+scaling the dots themselves. CSS grid
 reflows from five-wide to one-wide; reduced-motion and print styles remove
 unnecessary transforms. Decorative texture never carries information.
 
