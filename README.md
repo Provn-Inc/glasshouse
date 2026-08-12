@@ -6,13 +6,18 @@ typed prompts only for local analysis, scrubs common secrets from report text,
 and produces one self-contained HTML file.
 
 ```bash
-python3 -m pip install -e .
+uv tool install --editable .
 glasshouse --period 2026-08
+```
+
+For a one-off run from a checkout, installation is optional:
+
+```bash
+uv run glasshouse --period 2026-08
 ```
 
 Use `--dry-run` to print aggregate JSON, `--sources codex` to select sources,
 or `--no-git --no-gh` to disable repository enrichment. No transcript upload,
 telemetry, hosted account, external report assets, or JavaScript is used.
 
-Run tests with `python3 -m unittest discover -v`.
-
+Run tests with `uv run python -m unittest discover -v`.
