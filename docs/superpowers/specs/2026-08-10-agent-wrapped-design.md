@@ -312,10 +312,31 @@ why, malformed lines skipped, secrets scrubbed.
 python3 scripts/collect.py [--period YYYY-MM | YYYY] [--out PATH]
                            [--sources claude_code,codex,cursor]
                            [--no-git] [--no-gh] [--dry-run]
+
+glasshouse serve [REPORT.html] [--port PORT] [--no-open]
 ```
 
 `--period` defaults to the current calendar month. `--sources` defaults to all
 three. `--dry-run` prints the stat block and exits without writing JSON or HTML.
+
+### Local report server
+
+`glasshouse serve` previews an already generated report through a local HTTP
+server. An explicit `REPORT.html` is resolved and validated before the server
+starts. When omitted, Glasshouse selects the most recently modified
+`glasshouse-*.html` file in the current directory.
+
+The server binds to `127.0.0.1` only. Port `0` is the default, allowing the
+operating system to select an available port; `--port` accepts an explicit port
+for repeatable workflows. Glasshouse opens the exact report URL in the default
+browser unless `--no-open` is supplied, prints the URL, and runs until Ctrl-C.
+Shutdown is clean and does not print a traceback.
+
+Only the selected report is exposed. Requests for other paths return 404, and
+path traversal cannot escape to adjacent files. Serving never scans transcripts,
+computes metrics, or rewrites the report. Missing files, non-HTML inputs, an
+empty discovery result, and unavailable explicit ports produce concise errors
+and non-zero exit codes.
 
 ## Implementation sequencing
 
