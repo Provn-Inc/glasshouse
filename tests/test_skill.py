@@ -8,7 +8,7 @@ import unittest
 
 
 ROOT = Path(__file__).parents[1]
-SKILL = ROOT / "skills" / "glasshouse"
+SKILL = ROOT
 
 
 class AgentSkillTests(unittest.TestCase):
@@ -21,6 +21,7 @@ class AgentSkillTests(unittest.TestCase):
         self.assertIn("name: glasshouse", frontmatter)
         self.assertIn("license: MIT", frontmatter)
         self.assertIn("compatibility:", frontmatter)
+        self.assertFalse((ROOT / "skills").exists())
 
     def test_launcher_preserves_project_directory_and_forwards_arguments(self):
         launcher = SKILL / "scripts" / "glasshouse"
